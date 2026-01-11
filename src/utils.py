@@ -168,3 +168,14 @@ def extract_startup_records(df):
         raise ValueError("No valid startup records found.")
 
     return records
+
+
+def sanitize_dataframe(df, year_col="year", amount_col="amount"):
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+    if year_col in df.columns:
+        df[year_col] = pd.to_numeric(df[year_col], errors="coerce")
+    if amount_col in df.columns:
+        df[amount_col] = pd.to_numeric(df[amount_col], errors="coerce")
+    return df

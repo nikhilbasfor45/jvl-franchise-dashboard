@@ -11,6 +11,15 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Deploy (Streamlit Community Cloud)
+
+1) Push this repository to GitHub.
+2) Go to https://share.streamlit.io and connect your repo.
+3) Set the app entrypoint to `app.py`.
+4) Deploy.
+
+Note: SQLite runs in the app container. For persistent storage across redeploys, use an external database.
+
 ## Default Users
 
 - admin / admin123 (role: admin)

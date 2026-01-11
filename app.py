@@ -33,6 +33,7 @@ from utils import (
     normalize_startup_df,
     extract_startup_records,
     COLUMN_MAPPING,
+    sanitize_dataframe,
 )
 from scoring import get_user_stats
 
@@ -57,9 +58,9 @@ def login_panel():
     st.title("JVL Franchise Owner Dashboard")
     st.subheader("Secure sign-in")
     with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Sign in")
+        username = st.text_input("Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        submit = st.form_submit_button("Sign in", key="login_submit")
 
     if submit:
         user = verify_user(username, password)
@@ -94,9 +95,9 @@ if role == "admin":
     pages.insert(0, "Upload Data")
     pages.append("Admin Panel")
 
-selection = st.sidebar.selectbox("Navigation", pages)
+selection = st.sidebar.selectbox("Navigation", pages, key="nav_select")
 
-if st.sidebar.button("Log out"):
+if st.sidebar.button("Log out", key="logout_btn"):
     st.session_state.user = None
     if hasattr(st, "rerun"):
         st.rerun()
@@ -112,9 +113,9 @@ def upload_data_page():
     replace = False
     if locked:
         st.info("Startup master is locked. Only admins can replace it.")
-        replace = st.checkbox("Replace existing master")
+        replace = st.checkbox("Replace existing master", key="upload_replace_master")
 
-    upload = st.file_uploader("Upload .xlsx", type=["xlsx"])
+    upload = st.file_uploader("Upload .xlsx", type=["xlsx"], key="upload_excel")
 
     if upload:
         try:
@@ -147,22 +148,22 @@ def explore_page():
     st.title("Startup Explorer")
     st.markdown("Filter startups and open a detailed profile to rate and shortlist.")
 
-    df = get_startups_df()
+    df = sanitize_dataframe(get_startups_df())
     if df.empty:
         st.info("No startups uploaded yet.")
         return
 
-    search = st.text_input("Search by name")
+    search = st.text_input("Search by name", key="explore_search")
     sectors = sorted([x for x in df["sector"].dropna().unique()])
     cities = sorted([x for x in df["city"].dropna().unique()])
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        sector_filter = st.multiselect("Sector", sectors)
+        sector_filter = st.multiselect("Sector", sectors, key="explore_sector")
     with col2:
-        city_filter = st.multiselect("City", cities)
+        city_filter = st.multiselect("City", cities, key="explore_city")
     with col3:
-        year_filter = st.multiselect("Year", sorted(df["year"].dropna().unique()))
+        year_filter = st.multiselect("Year", sorted(df["year"].dropna().unique()), key="explore_year")
     with col4:
         amount_range = st.slider(
             "Amount Range",
@@ -170,6 +171,7 @@ def explore_page():
             float(df["amount"].max()) if not df["amount"].isna().all() else 1.0,
             (float(df["amount"].min()) if not df["amount"].isna().all() else 0.0,
              float(df["amount"].max()) if not df["amount"].isna().all() else 1.0),
+            key="explore_amount",
         )
 
     filtered = df.copy()
@@ -220,7 +222,11 @@ def explore_page():
         st.info("No startups match the filters.")
         return
 
-    startup_choice = st.selectbox("Select a startup for details", filtered["startup_name"].tolist())
+    startup_choice = st.selectbox(
+        "Select a startup for details",
+        filtered["startup_name"].tolist(),
+        key="explore_startup_choice",
+    )
     selected = filtered[filtered["startup_name"] == startup_choice].iloc[0]
 
     startup = get_startup_by_id(int(selected["id"]))
@@ -240,12 +246,12 @@ def explore_page():
             return url
         return "https://{}".format(url)
 
-    def _link_button(label, url):
+    def _link_button(label, url, key):
         if not url:
-            st.button(label, disabled=True)
+            st.button(label, disabled=True, key=key)
             return
         if hasattr(st, "link_button"):
-            st.link_button(label, url)
+            st.link_button(label, url, key=key)
         else:
             st.markdown(f'<a href="{url}" target="_blank">{label}</a>', unsafe_allow_html=True)
 
@@ -301,11 +307,11 @@ def explore_page():
 
         action_cols = st.columns(3)
         with action_cols[0]:
-            _link_button("Open Website", website_value)
+            _link_button("Open Website", website_value, key=f"open_website_{startup['id']}")
         with action_cols[1]:
-            _link_button("Open Source", source_value)
+            _link_button("Open Source", source_value, key=f"open_source_{startup['id']}")
         with action_cols[2]:
-            st.text_input("Website URL", value=website_value, disabled=True)
+            st.text_input("Website URL", value=website_value, disabled=True, key=f"website_url_{startup['id']}")
 
         detail_cols = st.columns(2)
         with detail_cols[0]:
@@ -325,9 +331,9 @@ def explore_page():
             st.markdown("**Contact**")
             st.write(_safe_value(contact_value))
             st.markdown("**Website**")
-            _link_button("Visit Website", website_value)
+            _link_button("Visit Website", website_value, key=f"visit_website_{startup['id']}")
             st.markdown("**Source**")
-            _link_button("Open Source", source_value)
+            _link_button("Open Source", source_value, key=f"open_source_detail_{startup['id']}")
 
     if notes_text:
         st.markdown("<div class='section-header'>Notes / Summary</div>", unsafe_allow_html=True)
@@ -361,16 +367,16 @@ def explore_page():
     rating_default = int(current_rating["rating"]) if current_rating else 3
     comment_default = current_rating["comment"] if current_rating else ""
 
-    rating = st.slider("Rating (1-5)", 1, 5, rating_default)
-    comment = st.text_area("Comment", value=comment_default)
+    rating = st.slider("Rating (1-5)", 1, 5, rating_default, key=f"rating_{startup['id']}")
+    comment = st.text_area("Comment", value=comment_default, key=f"comment_{startup['id']}")
 
-    if st.button("Save rating"):
+    if st.button("Save rating", key=f"save_rating_{startup['id']}"):
         upsert_rating(startup["id"], user["id"], rating, comment)
         st.success("Rating saved.")
 
     col_a, col_b = st.columns(2)
     with col_a:
-        if st.button("Toggle shortlist"):
+        if st.button("Toggle shortlist", key=f"toggle_shortlist_{startup['id']}"):
             added = toggle_shortlist(startup["id"], user["id"])
             msg = "Added to shortlist" if added else "Removed from shortlist"
             st.success(msg)
@@ -380,20 +386,24 @@ def explore_page():
 
 def shortlist_page():
     st.title("My Shortlist")
-    df = get_user_shortlist_df(user["id"])
+    df = sanitize_dataframe(get_user_shortlist_df(user["id"]))
     if df.empty:
         st.info("No startups in your shortlist yet.")
         return
 
-    st.dataframe(df[["startup_name", "sector", "city", "year", "amount"]], use_container_width=True, hide_index=True)
+    st.dataframe(
+        df[["startup_name", "sector", "city", "year", "amount"]],
+        use_container_width=True,
+        hide_index=True,
+    )
 
     csv = df.to_csv(index=False)
-    st.download_button("Export CSV", csv, file_name="my_shortlist.csv")
+    st.download_button("Export CSV", csv, file_name="my_shortlist.csv", key="shortlist_export")
 
 
 def ratings_page():
     st.title("My Ratings")
-    df = get_user_ratings_df(user["id"])
+    df = sanitize_dataframe(get_user_ratings_df(user["id"]))
     if df.empty:
         st.info("You have not rated any startups yet.")
         return
@@ -402,7 +412,7 @@ def ratings_page():
 
 def leaderboard_page():
     st.title("Leaderboard")
-    df = get_leaderboard_df()
+    df = sanitize_dataframe(get_leaderboard_df())
     if df.empty:
         st.info("No ratings yet.")
         return
@@ -426,13 +436,13 @@ def admin_panel():
     st.title("Admin Panel")
     st.markdown("Download system exports for reporting.")
 
-    ratings_df = get_ratings_export_df()
-    shortlists_df = get_shortlists_export_df()
-    startups_df = get_startups_df()
+    ratings_df = sanitize_dataframe(get_ratings_export_df())
+    shortlists_df = sanitize_dataframe(get_shortlists_export_df())
+    startups_df = sanitize_dataframe(get_startups_df())
 
-    st.download_button("Export Ratings", ratings_df.to_csv(index=False), file_name="ratings.csv")
-    st.download_button("Export Shortlists", shortlists_df.to_csv(index=False), file_name="shortlists.csv")
-    st.download_button("Export Startups", startups_df.to_csv(index=False), file_name="startups_master.csv")
+    st.download_button("Export Ratings", ratings_df.to_csv(index=False), file_name="ratings.csv", key="export_ratings")
+    st.download_button("Export Shortlists", shortlists_df.to_csv(index=False), file_name="shortlists.csv", key="export_shortlists")
+    st.download_button("Export Startups", startups_df.to_csv(index=False), file_name="startups_master.csv", key="export_startups")
 
 
 if selection == "Upload Data":
