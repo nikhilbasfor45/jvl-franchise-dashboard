@@ -1,0 +1,98 @@
+/* JVL Franchise Owner Dashboard Styles */
+:root {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --border: #e5e7eb;
+}
+
+html, body, [class*="stApp"] {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+section.main > div {
+  padding-top: 1.5rem;
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+}
+
+.section-header {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0.75rem 0 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.card .label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.card .value {
+  font-size: 0.98rem;
+  margin-bottom: 0.6rem;
+}
+
+.stButton > button {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+}
+
+.stButton > button:hover {
+  background: #1b5fd1;
+  color: #ffffff;
+}
+
+.stTextInput > div > div > input, .stTextArea textarea, .stNumberInput input, .stSelectbox > div > div {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.stDataFrame, .stTable {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+div[data-testid="stSidebar"] {
+  background-color: #ffffff;
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(31, 111, 235, 0.1);
+  color: var(--accent);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
